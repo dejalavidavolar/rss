@@ -1,9 +1,9 @@
 from calibre.web.feeds.news import BasicNewsRecipe
 
-class HybridNews(BasicNewsRecipe):
+class HybridNewsFullText(BasicNewsRecipe):
     title       = 'Noticias'
-    __author__  = 'Cri'
-    description = 'Noticias de shile y el mundo'
+    __author__  = 'RSS'
+    description = 'RSS'
     language    = 'es'
     encoding    = 'utf-8'
 
@@ -37,8 +37,16 @@ class HybridNews(BasicNewsRecipe):
         dict(class_=['article-end', 'post-footer'])  # Todo lo que venga después se borra
     ]
 
-    # Opcional: quitar frases de copyright o promos que algunos medios ponen
+    # --- Tomar el contenido completo de RSS si está disponible ---
+    def process_item(self, item):
+        # Si existe content:encoded en el RSS, usarlo como contenido
+        if hasattr(item, 'content') and item.content:
+            item['content'] = item.content
+        return item
+
+    # --- Preprocesar HTML para limpieza ---
     def preprocess_html(self, soup):
+        # Eliminar textos no deseados
         for tag in soup.find_all(text=True):
             if any(bloqueo in tag for bloqueo in ["©", "Suscríbete", "Publicidad"]):
                 tag.extract()
@@ -48,4 +56,3 @@ class HybridNews(BasicNewsRecipe):
             related.decompose()
 
         return soup
-
