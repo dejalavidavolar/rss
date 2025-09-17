@@ -1,0 +1,51 @@
+from calibre.web.feeds.news import BasicNewsRecipe
+
+class HybridNews(BasicNewsRecipe):
+    title       = 'Noticias'
+    __author__  = 'Cri'
+    description = 'Noticias de shile y el mundo'
+    language    = 'es'
+    encoding    = 'utf-8'
+
+    oldest_article = 3                 # Máximo 3 días de antigüedad
+    max_articles_per_feed = 10         # Límite por feed
+    remove_empty_feeds = True          # Si no hay artículos, no muestra la sección
+
+    # --- Feeds RSS (aprovecha RSS existentes) ---
+    feeds = [
+        ('BBC World', 'https://rss.cri.cl/bbc/world?key=FrenchFries.2427/'),
+        ('DW Ciencia', 'https://rss.cri.cl/dw/news/es/s-7577?key=FrenchFries.2427/'),
+        ('DW Latinoamérica', 'https://rss.cri.cl/dw/news/es/s-42464457?key=FrenchFries.2427/'),
+        ('DW Historia', 'https://rss.cri.cl/dw/news/es/s-12340?key=FrenchFries.2427/'),
+        ('Ciper', 'https://ciperchile.cl/feed'),
+        ('Radio UChile', 'https://radio.uchile.cl/noticias/feed/'),
+    ]
+
+    # --- Limpieza del HTML en cada artículo ---
+    keep_only_tags = [
+        dict(name='article'),                # Mantener solo el contenido principal
+        dict(id='content'),                  # A veces usan <div id="content">
+        dict(class_=['post-content','entry-content'])
+    ]
+
+    remove_tags = [
+        dict(class_=['advertisement', 'ads', 'social-share']),
+        dict(id=['comments', 'related-articles', 'footer']),
+    ]
+
+    remove_tags_after = [
+        dict(class_=['article-end', 'post-footer'])  # Todo lo que venga después se borra
+    ]
+
+    # Opcional: quitar frases de copyright o promos que algunos medios ponen
+    def preprocess_html(self, soup):
+        for tag in soup.find_all(text=True):
+            if any(bloqueo in tag for bloqueo in ["©", "Suscríbete", "Publicidad"]):
+                tag.extract()
+
+        # Quitar enlaces de "artículos relacionados"
+        for related in soup.find_all('a', string=lambda s: s and "Relacionado" in s):
+            related.decompose()
+
+        return soup
+
